@@ -37,3 +37,15 @@ This workflow demonstrates how AI agents can be integrated into structured autom
 - Healthy → Motivational email.
 - Needs Attention → Email with practical tips.
 - Critical → Alert email 
+
+
+### 4. Weekly Report
+- Node: Cron (runs every Sunday).
+
+Action: Reads all entries from the past week.
+
+AI Node: Summarizes weekly trends.
+
+Drive/Docs Node: Creates a “Weekly Wellness Report” document.
+
+Email Node: Sends the report to the user.
