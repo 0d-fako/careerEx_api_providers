@@ -1,0 +1,457 @@
+{
+  "name": "Personal Wellness Tracker",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "18S6N-9ojAd9YfgEQ3MKfS0Bstf5y7vuOmBELBzN5cAk",
+          "mode": "list",
+          "cachedResultName": "Personal Wellness Tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18S6N-9ojAd9YfgEQ3MKfS0Bstf5y7vuOmBELBzN5cAk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/18S6N-9ojAd9YfgEQ3MKfS0Bstf5y7vuOmBELBzN5cAk/edit#gid=0"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "48e95cc8-2070-4ca5-b742-414645ef0a16",
+      "name": "Daily Check-in Submitted",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        400
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "koyCwSuUGUL74kJa",
+          "name": "Google Sheets Trigger OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this wellness check-in data and determine the wellness status:\n\nName: {{ $json[\"Name \"] }}\nMood (1-10): {{ $json.Mood }}\nSleep Hours: {{ $json[\"Sleep Hours\"] }}\nExercise: {{ $json.Exercise }}\nReflection: {{ $json[\"Reflection \"] }}\n\nBased on this data, classify the wellness status as one of:\n- \"Healthy\" if mood >= 7, sleep >= 7 hours, exercise is Yes\n- \"Needs Attention\" if mood 4-6, sleep 4-6 hours, or exercise is No\n- \"Critical\" if mood <= 3, sleep < 4 hours\n\nReturn ONLY the status word: Healthy, Needs Attention, or Critical",
+        "options": {
+          "systemMessage": "You are a wellness data analyzer. Your role is to evaluate wellness check-in data and classify the wellness status based on mood, sleep, and exercise metrics. Always respond with exactly one of these status words: Healthy, Needs Attention, or Critical."
+        }
+      },
+      "id": "4a33376c-d2ce-4fa5-9c64-72c4ac9cae21",
+      "name": "Analyze Wellness Data",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        464,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "Healthy",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "bee4ef6d-4f8b-41a7-98d9-cc25c646634f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Healthy"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "Needs Attention",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "732e8b2f-e41e-4839-946a-e5d053ccdb10"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Needs Attention"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "Critical",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "9134b85f-e394-4bce-8d1e-7d41d03e2459"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Critical"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bf21accd-a388-44c5-b52c-ed28dbc12832",
+      "name": "Route by Wellness Status",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $(\"Daily Check-in Submitted\").item.json[\"Email \"] }}",
+        "subject": "=Great Job! Your Wellness is On Track",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;\"><div style=\"background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\"><h2 style=\"color: #4CAF50; margin-top: 0; border-bottom: 3px solid #4CAF50; padding-bottom: 10px;\">Wellness Check-in: Healthy Status</h2><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Hi {{ $(\"Daily Check-in Submitted\").item.json[\"Name \"] }},</p><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Excellent work! Your wellness metrics are looking great:</p><ul style=\"background-color: #f1f8f4; padding: 20px; border-radius: 4px; list-style: none; margin: 20px 0;\"><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Mood:</strong> {{ $(\"Daily Check-in Submitted\").item.json.Mood }}/10</li><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Sleep:</strong> {{ $(\"Daily Check-in Submitted\").item.json[\"Sleep Hours\"] }} hours</li><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Exercise:</strong> {{ $(\"Daily Check-in Submitted\").item.json.Exercise }}</li></ul><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Keep up the fantastic work! Continue maintaining these healthy habits.</p><p style=\"font-size: 14px; line-height: 1.6; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;\">Best regards,<br><strong>Your Wellness Coach</strong></p></div></div>",
+        "options": {
+          "senderName": "Wellness Coach"
+        }
+      },
+      "id": "81815762-1ad8-4235-9839-ab0faa2ff006",
+      "name": "Send Healthy Status Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        208
+      ],
+      "webhookId": "44fd5e35-9a55-464c-924f-365f161c0aca",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MuqvKPCNWcxpQimi",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $(\"Daily Check-in Submitted\").item.json[\"Email \"] }}",
+        "subject": "=Wellness Check: Let's Get Back on Track",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;\"><div style=\"background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\"><h2 style=\"color: #FF9800; margin-top: 0; border-bottom: 3px solid #FF9800; padding-bottom: 10px;\">Wellness Check-in: Needs Attention</h2><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Hi {{ $(\"Daily Check-in Submitted\").item.json[\"Name \"] }},</p><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Your recent wellness check-in shows some areas that could use improvement:</p><ul style=\"background-color: #fff8e1; padding: 20px; border-radius: 4px; list-style: none; margin: 20px 0;\"><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Mood:</strong> {{ $(\"Daily Check-in Submitted\").item.json.Mood }}/10</li><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Sleep:</strong> {{ $(\"Daily Check-in Submitted\").item.json[\"Sleep Hours\"] }} hours</li><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Exercise:</strong> {{ $(\"Daily Check-in Submitted\").item.json.Exercise }}</li></ul><div style=\"background-color: #e3f2fd; border-left: 4px solid #2196F3; padding: 20px; margin: 20px 0; border-radius: 4px;\"><p style=\"margin: 0 0 10px 0; font-size: 16px; font-weight: bold; color: #1976D2;\">Personalized Tips:</p><ul style=\"margin: 10px 0 0 0; padding-left: 20px;\"><li style=\"padding: 5px 0; font-size: 15px; color: #333;\">Try to get at least 7-8 hours of sleep tonight</li><li style=\"padding: 5px 0; font-size: 15px; color: #333;\">Take a 15-minute walk to boost your mood and energy</li><li style=\"padding: 5px 0; font-size: 15px; color: #333;\">Practice 5 minutes of deep breathing or meditation</li></ul></div><p style=\"font-size: 16px; line-height: 1.6; color: #333; font-weight: 500;\">Small steps can make a big difference. You've got this!</p><p style=\"font-size: 14px; line-height: 1.6; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;\">Best regards,<br><strong>Your Wellness Coach</strong></p></div></div>",
+        "options": {
+          "senderName": "Wellness Coach"
+        }
+      },
+      "id": "d32f24ad-2d63-4b7b-8044-22350902baa2",
+      "name": "Send Needs Attention Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        400
+      ],
+      "webhookId": "67fcabea-ac5b-4fae-a720-96ec82969a9f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MuqvKPCNWcxpQimi",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $(\"Daily Check-in Submitted\").item.json[\"Email \"] }}",
+        "subject": "=URGENT: Wellness Check - Immediate Support Needed",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;\"><div style=\"background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\"><h2 style=\"color: #d32f2f; margin-top: 0; border-bottom: 3px solid #d32f2f; padding-bottom: 10px;\">Wellness Alert: Critical Status</h2><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Hi {{ $(\"Daily Check-in Submitted\").item.json[\"Name \"] }},</p><p style=\"font-size: 16px; line-height: 1.6; color: #333;\"><strong>We're concerned about your recent wellness check-in:</strong></p><ul style=\"background-color: #ffebee; padding: 20px; border-radius: 4px; list-style: none; margin: 20px 0;\"><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Mood:</strong> {{ $(\"Daily Check-in Submitted\").item.json.Mood }}/10</li><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Sleep:</strong> {{ $(\"Daily Check-in Submitted\").item.json[\"Sleep Hours\"] }} hours</li><li style=\"padding: 8px 0; font-size: 15px; color: #333;\"><strong>Exercise:</strong> {{ $(\"Daily Check-in Submitted\").item.json.Exercise }}</li></ul><div style=\"background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 20px 0; border-radius: 4px;\"><p style=\"margin: 0 0 10px 0; font-size: 16px; font-weight: bold; color: #f57c00;\">Immediate Action Recommended:</p><p style=\"margin: 10px 0; font-size: 15px; color: #333;\">Your wellness metrics indicate you may need additional support. Please consider:</p><ul style=\"margin: 10px 0 0 0; padding-left: 20px;\"><li style=\"padding: 5px 0; font-size: 15px; color: #333;\">Reaching out to a healthcare professional or counselor</li><li style=\"padding: 5px 0; font-size: 15px; color: #333;\">Contacting our wellness support team at support@wellness.com</li><li style=\"padding: 5px 0; font-size: 15px; color: #333;\">Using crisis resources if you're in immediate distress</li></ul></div><div style=\"background-color: #e8f5e9; border-left: 4px solid #4CAF50; padding: 20px; margin: 20px 0; border-radius: 4px;\"><p style=\"margin: 0 0 10px 0; font-size: 16px; font-weight: bold; color: #2e7d32;\">Crisis Resources:</p><ul style=\"margin: 10px 0 0 0; padding-left: 20px;\"><li style=\"padding: 5px 0; font-size: 15px; color: #333;\"><strong>National Crisis Hotline:</strong> 988</li><li style=\"padding: 5px 0; font-size: 15px; color: #333;\"><strong>Crisis Text Line:</strong> Text HOME to 741741</li></ul></div><p style=\"font-size: 16px; line-height: 1.6; color: #333; font-weight: 500;\">You don't have to face this alone. We're here to help.</p><p style=\"font-size: 14px; line-height: 1.6; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;\">With care,<br><strong>Your Wellness Team</strong></p></div></div>",
+        "options": {
+          "ccList": "wellness-team@example.com",
+          "senderName": "Wellness Team"
+        }
+      },
+      "id": "6c7473e8-8eb4-4dd3-84d3-806639b48994",
+      "name": "Send Critical Alert Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        592
+      ],
+      "webhookId": "e966318e-8100-4787-a409-9e93544d2c39",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MuqvKPCNWcxpQimi",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "b38f9530-6983-4075-a258-f0fd3b6467a3",
+      "name": "Weekly Report Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "weekStart",
+              "value": "={{ $now.minus({ days: 7 }).toFormat(\"yyyy-MM-dd\") }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "weekEnd",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "681e9d27-d57f-44a8-bb99-30304f6324e2",
+      "name": "Fetch Weekly Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        528,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate a comprehensive weekly wellness report for the period {{ $json.weekStart }} to {{ $json.weekEnd }}.\n\nCreate a summary that includes:\n1. Overall wellness trend (improving, stable, declining)\n2. Average mood, sleep, and exercise metrics\n3. Key achievements and positive patterns\n4. Areas for improvement\n5. Personalized recommendations for the coming week\n\nFormat the report in a friendly, encouraging tone suitable for an email.",
+        "options": {
+          "systemMessage": "You are a wellness coach assistant. Your role is to generate comprehensive, encouraging weekly wellness reports based on user data. Focus on positive reinforcement while providing actionable recommendations for improvement."
+        }
+      },
+      "id": "b264ede4-2153-428b-98b2-f39f018976bb",
+      "name": "Generate Weekly Report",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        816,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "user@example.com",
+        "subject": "=Your Weekly Wellness Report - {{ $(\"Fetch Weekly Data\").item.json.weekStart }} to {{ $(\"Fetch Weekly Data\").item.json.weekEnd }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;\"><div style=\"background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\"><h2 style=\"color: #673AB7; margin-top: 0; border-bottom: 3px solid #673AB7; padding-bottom: 10px;\">Your Weekly Wellness Summary</h2><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Hi there,</p><p style=\"font-size: 16px; line-height: 1.6; color: #333;\">Here's your personalized wellness report for the past week:</p><div style=\"background-color: #f5f5f5; border-left: 4px solid #673AB7; padding: 20px; margin: 20px 0; border-radius: 4px; font-size: 15px; line-height: 1.8; color: #333; white-space: pre-wrap;\">{{ $json.output }}</div><p style=\"font-size: 16px; line-height: 1.6; color: #333; font-weight: 500;\">Keep up the great work on your wellness journey!</p><p style=\"font-size: 14px; line-height: 1.6; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;\">Best regards,<br><strong>Your Wellness Coach</strong></p></div></div>",
+        "options": {
+          "senderName": "Wellness Coach"
+        }
+      },
+      "id": "f53f3663-1e99-403b-a629-ddf2b8ac38b6",
+      "name": "Send Weekly Report",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1168,
+        784
+      ],
+      "webhookId": "414e0d4a-cfb5-4e0c-8b26-046bbaa3bdc8",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MuqvKPCNWcxpQimi",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-6",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        544,
+        528
+      ],
+      "id": "dcb033fd-3c78-4d6a-ad1f-09690c43fa5a",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "XA4QUAAoCoV9Hdsd",
+          "name": "Anthropic account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily Check-in Submitted": {
+      "main": [
+        [
+          {
+            "node": "Analyze Wellness Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Wellness Data": {
+      "main": [
+        [
+          {
+            "node": "Route by Wellness Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Wellness Status": {
+      "main": [
+        [
+          {
+            "node": "Send Healthy Status Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Needs Attention Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Critical Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly Report Schedule": {
+      "main": [
+        [
+          {
+            "node": "Fetch Weekly Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Weekly Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze Wellness Data",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Generate Weekly Report",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "283a1f28-3695-4cb6-b813-a3736fe473f1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "16f03c53b797e457b951511510a9ee2f5f6f6d21a63f5cff6a03c17495b4106c"
+  },
+  "nodeGroups": [],
+  "id": "pTOu6x6KRkc4hr5E",
+  "tags": []
+}
