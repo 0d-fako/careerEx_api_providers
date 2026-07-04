@@ -40,12 +40,7 @@ This workflow demonstrates how AI agents can be integrated into structured autom
 
 
 ### 4. Weekly Report
-- Node: Cron (runs every Sunday).
-
-Action: Reads all entries from the past week.
-
-AI Node: Summarizes weekly trends.
-
-Drive/Docs Node: Creates a “Weekly Wellness Report” document.
-
-Email Node: Sends the report to the user.
+- *Node*: Cron (runs every Sunday).
+- *Action*: Reads all entries from the past week.
+- *AI Node*: Summarizes weekly trends.
+- *Email Node*: Sends the report to the user.
