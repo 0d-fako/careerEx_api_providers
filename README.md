@@ -1,4 +1,4 @@
-# 🌱 Personal Wellness Tracker (n8n Workflow)
+# Personal Wellness Tracker
 
 ## Overview
 The **Personal Wellness Tracker** is an automated workflow built in **n8n** that helps individuals reflect on their daily wellbeing. It captures check‑in data (mood, sleep, exercise, reflection), uses AI to provide empathetic feedback, and generates weekly reports for long‑term growth.
